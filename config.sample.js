@@ -2,7 +2,8 @@ const path = require('path')
 
 module.exports = {
   dirs: [ ],
-  leveldb: path.resolve(__dirname, './queue'),
+  queuedb: path.resolve(__dirname, './queue'),
+  completeddb: path.resolve(__dirname, './completed'),
   mysql: {
     client: 'mysql',
     connection: {

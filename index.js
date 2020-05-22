@@ -14,7 +14,8 @@ log.log = console.log.bind(console)
 const logError = debug('indexer:error')
 debug.enable('indexer')
 
-const leveldb = level(config.leveldb)
+const queuedb = level(config.queuedb)
+const completeddb = level(config.completeddb)
 const db = Knex(config.mysql)
 let started = false
 let loaded = false
@@ -29,7 +30,7 @@ const getAcoustID = (filepath, options = {}) => {
 }
 
 const getNext = () => new Promise((resolve, reject) => {
-  const it = leveldb.iterator()
+  const it = queuedb.iterator()
   it.next((error, key, value) => {
     if (error) {
       return reject(error)
@@ -53,7 +54,7 @@ const run = async () => {
   log(`indexing ${filepath}`)
 
   const finish = async () => {
-    await leveldb.del(filepath)
+    await queuedb.del(filepath)
     run()
   }
 
@@ -124,7 +125,7 @@ const run = async () => {
     ) {
       logError(error)
     }
-    await leveldb.put(filepath, e.toString())
+    await completeddb.put(filepath, e.toString())
   }
 
   return finish()
@@ -153,9 +154,10 @@ const walk = async (dir, { filelist = [], dirlist = [], onFile } = {}) => {
     } else {
       filelist.push(filepath)
       try {
-        await leveldb.get(filepath)
+        await completeddb.get(filepath)
+        await queuedb.get(filepath)
       } catch (error) {
-        await leveldb.put(filepath, true)
+        await queuedb.put(filepath, true)
         start()
       }
     }
@@ -166,7 +168,8 @@ const walk = async (dir, { filelist = [], dirlist = [], onFile } = {}) => {
 
 
 const main = async () => {
-  await leveldb.open()
+  await queuedb.open()
+  await completeddb.open()
 
   for (const dir of config.dirs) {
     await walk(dir)
