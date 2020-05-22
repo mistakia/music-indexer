@@ -8,6 +8,7 @@ const musicMetadata = require('music-metadata')
 const { sha256 } = require('crypto-hash')
 const config = require('./config')
 const level = require('level')
+const hasha = require('hasha')
 
 const log = debug('indexer')
 log.log = console.log.bind(console)
@@ -61,8 +62,7 @@ const run = async () => {
   try {
     const stat = fs.statSync(filepath)
     const { size } = stat
-    const content = fs.readFileSync(filepath)
-    const hash = await sha256(content)
+    const hash = await hasha.fromFile(filepath, { algorithm: 'sha256' })
     const tracks = await db('tracks').where({ hash })
     if (tracks.length) {
       await db('files').insert({
