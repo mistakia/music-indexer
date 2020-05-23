@@ -154,8 +154,8 @@ const walk = async (dir, { filelist = [], dirlist = [], onFile } = {}) => {
     } else {
       filelist.push(filepath)
       try {
-        await completeddb.get(filepath)
-        await queuedb.get(filepath)
+        const item = await completeddb.get(filepath)
+        if (!item) await queuedb.get(filepath)
       } catch (error) {
         await queuedb.put(filepath, true)
         start()
